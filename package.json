@@ -14,8 +14,8 @@
       "output": "dist"
     },
     "files": [
-      "index.html",
       "main.js",
+      "index.html",
       "preload.js",
       "assets/**/*"
     ],
