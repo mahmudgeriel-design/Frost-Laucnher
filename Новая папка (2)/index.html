@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Frost Launcher</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            width: 950px; height: 580px;
+            background: #0d0d12; color: #fff;
+            display: flex; overflow: hidden; user-select: none;
+        }
+        .sidebar {
+            width: 220px; background: #0f0f16;
+            border-right: 1px solid #1e1e2a;
+            padding: 28px 18px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .logo-section {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 32px;
+        }
+        .logo-img {
+            width: 36px; height: 36px; object-fit: contain;
+        }
+        .logo-text {
+            font-size: 18px; font-weight: 700;
+            background: linear-gradient(135deg, #fb923c, #f97316);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-btn {
+            padding: 12px 16px; border-radius: 12px; font-weight: 600;
+            font-size: 14px; color: #6b6b7e; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .nav-btn:hover { background: #191925; color: #c8c8e0; }
+        .nav-btn.active { background: #1a1a2a; color: #fb923c; box-shadow: inset 3px 0 0 #fb923c; }
+        .nav-icon { font-style: normal; width: 20px; text-align: center; opacity: 0.7; }
+        .nav-btn.active .nav-icon { opacity: 1; }
+        .main-area {
+            flex: 1; padding: 20px 28px 20px 28px;
+            display: flex; flex-direction: column;
+            background: radial-gradient(circle at 80% 0%, rgba(251, 146, 60, 0.06), transparent 60%);
+            position: relative; overflow-y: auto;
+            gap: 10px;
+        }
+        .main-area::-webkit-scrollbar { width: 4px; }
+        .main-area::-webkit-scrollbar-track { background: transparent; }
+        .main-area::-webkit-scrollbar-thumb { background: #3d3d5a; border-radius: 20px; }
+
+        .tab-content { display: none; animation: fadeUp 0.35s ease forwards; }
+        .tab-content.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .tab-desc { color: #8585a0; font-size: 13px; margin-bottom: 16px; border-left: 2px solid #f97316; padding-left: 14px; }
+
+        .panel {
+            background: #13131c; border: 1px solid #222233; border-radius: 14px;
+            padding: 18px 20px; margin-bottom: 12px;
+        }
+        .panel-title { font-size: 16px; font-weight: 600; color: #fb923c; margin-bottom: 10px; }
+
+        .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .row input, .row select {
+            background: #0b0b12; border: 1px solid #2b2b42;
+            padding: 8px 14px; border-radius: 10px; color: #fff; outline: none;
+            font-size: 14px;
+        }
+        .row input:focus, .row select:focus { border-color: #fb923c; }
+        .btn {
+            background: linear-gradient(135deg, #f97316, #fb923c);
+            border: none; padding: 8px 18px; border-radius: 10px;
+            color: #fff; font-weight: 600; cursor: pointer; transition: 0.2s;
+            font-size: 13px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(251, 146, 60, 0.4); }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); }
+        .btn-success { background: #16a34a; }
+        .btn-success:hover { box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4); }
+        .btn-blue { background: #3b82f6; }
+        .btn-blue:hover { box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; background: #0b0b12; border-radius: 8px;
+            border: 1px solid #1a1a2a; margin-bottom: 6px;
+        }
+        .list-item .name { font-weight: 500; color: #e0e0f0; }
+        .list-item .ip { color: #8585a0; font-size: 13px; }
+        .list-item .actions { display: flex; gap: 6px; }
+
+        .mod-list {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            max-height: 160px; overflow-y: auto;
+        }
+        .mod-list::-webkit-scrollbar { width: 4px; }
+        .mod-list::-webkit-scrollbar-thumb { background: #3d3d5a; border-radius: 20px; }
+        .mod-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 12px; background: #0b0b12; border-radius: 8px;
+            border: 1px solid #1a1a2a;
+        }
+        .mod-item .mod-name { font-size: 13px; color: #c8c8e0; }
+        .mod-item .mod-size { font-size: 11px; color: #6b6b84; }
+
+        .badge {
+            padding: 2px 10px; border-radius: 40px; font-size: 11px; font-weight: 600;
+        }
+        .badge-online { background: #16a34a33; color: #4ade80; }
+        .badge-offline { background: #dc262633; color: #f87171; }
+
+        .launch-panel {
+            background: #11111b; border: 1px solid #232336; border-radius: 24px;
+            padding: 14px 20px; display: flex; align-items: center;
+            justify-content: space-between; margin-top: auto; backdrop-filter: blur(4px);
+            gap: 12px; flex-wrap: wrap;
+        }
+        .launch-panel .nick-box input {
+            background: #0b0b12; border: 1px solid #2b2b42;
+            padding: 10px 16px; border-radius: 14px; color: #eaeaff;
+            font-size: 14px; width: 180px; outline: none;
+        }
+        .launch-panel .nick-box input:focus { border-color: #fb923c; }
+        .btn-play {
+            background: linear-gradient(135deg, #f97316, #fb923c);
+            border: none; padding: 12px 40px; font-size: 16px;
+            font-weight: 700; color: #fff; border-radius: 40px;
+            cursor: pointer; transition: 0.25s;
+            box-shadow: 0 6px 24px rgba(251, 146, 60, 0.35);
+        }
+        .btn-play:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(251, 146, 60, 0.55); }
+        .btn-play:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+        .lock-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(13, 13, 18, 0.92); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; flex-direction: column; padding: 40px;
+        }
+        .lock-overlay.hidden { display: none; }
+        .lock-box {
+            background: #13131c; border: 1px solid #222233; border-radius: 24px;
+            padding: 35px 45px; max-width: 480px; width: 100%; text-align: center;
+        }
+        .lock-box h2 { font-size: 22px; margin-bottom: 6px; color: #fb923c; }
+        .lock-box .sub { color: #8585a0; font-size: 13px; margin-bottom: 20px; }
+        .lock-box input {
+            width: 100%; background: #0b0b12; border: 1px solid #2b2b42;
+            padding: 12px 16px; border-radius: 12px; color: #fff; font-size: 15px;
+            outline: none; margin-bottom: 10px; text-align: center;
+            letter-spacing: 2px; font-weight: 600;
+        }
+        .lock-box input:focus { border-color: #fb923c; }
+        .lock-box .btn-activate {
+            width: 100%; background: linear-gradient(135deg, #f97316, #fb923c);
+            border: none; padding: 12px; border-radius: 12px; color: #fff;
+            font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .lock-box .btn-activate:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(251, 146, 60, 0.4); }
+        .lock-box .btn-activate:disabled { opacity: 0.5; cursor: not-allowed; }
+        .lock-box .status-msg { margin-top: 10px; font-size: 13px; min-height: 20px; }
+        .lock-box .status-msg.success { color: #4ade80; }
+        .lock-box .status-msg.error { color: #f87171; }
+        .lock-box .status-msg.loading { color: #fb923c; }
+        .lock-box .hint { color: #6b6b84; font-size: 12px; margin-top: 12px; border-top: 1px solid #1a1a2a; padding-top: 12px; }
+        .lock-box .timer { font-size: 16px; font-weight: 700; color: #fb923c; margin-top: 8px; padding: 8px; border-radius: 10px; background: #0b0b12; border: 1px solid #2b2b42; }
+        .lock-box .expiry-date { font-size: 12px; color: #8585a0; margin-top: 4px; }
+
+        .empty-msg { color: #6b6b84; font-size: 13px; padding: 10px 0; text-align: center; }
+        
+        .server-status { font-size: 12px; margin-left: 8px; }
+        .server-status.online { color: #4ade80; }
+        .server-status.offline { color: #6b6b84; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-section">
+            <img src="assets/logo.png" class="logo-img" alt="Logo" onerror="this.style.display='none'">
+            <div class="logo-text">FROST</div>
+        </div>
+        <div class="nav-btn active" onclick="switchTab('main')"><span class="nav-icon">⌂</span> Главная</div>
+        <div class="nav-btn" onclick="switchTab('servers')"><span class="nav-icon">◈</span> Сервера</div>
+        <div class="nav-btn" onclick="switchTab('mods')"><span class="nav-icon">⚙</span> Моды</div>
+        <div class="nav-btn" onclick="switchTab('settings')"><span class="nav-icon">✉</span> Настройки</div>
+    </div>
+
+    <div class="main-area" id="mainArea">
+        <!-- БЛОКИРОВКА -->
+        <div class="lock-overlay" id="lockOverlay">
+            <div class="lock-box">
+                <h2>🔑 Активация</h2>
+                <div class="sub" id="statusSub">⏳ Загрузка ключей...</div>
+                <input type="text" id="lockKeyInput" placeholder="FV-XXXX-XXXX" maxlength="12" oninput="this.value = this.value.toUpperCase()">
+                <button class="btn-activate" id="lockActivateBtn" onclick="activateFromLock()">✅ Активировать</button>
+                <div class="status-msg" id="lockStatus"></div>
+                <div id="timerDisplay" style="display:none;" class="timer">⏱️ Ожидание...</div>
+                <div id="expiryDateDisplay" style="display:none;" class="expiry-date"></div>
+                <div class="hint">💡 Ключ можно получить у администратора</div>
+            </div>
+        </div>
+
+        <div id="mainContent" style="display:none; flex:1; display:flex; flex-direction:column;">
+
+            <!-- ===== ГЛАВНАЯ ===== -->
+            <div id="tab-main" class="tab-content active">
+                <h1 class="tab-title">Frost Launcher</h1>
+                <p class="tab-desc">Ваш надёжный спутник для <b>FrostVisuals</b> — быстрый старт и полный контроль.</p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <div style="background:#13131c; border-radius:16px; padding:16px 20px; border:1px solid #222233; flex:1;">
+                        <div style="color:#8585a0; font-size:12px;">Версия клиента</div>
+                        <div style="font-weight:700; font-size:20px; color:#fb923c;">v3.5.0</div>
+                    </div>
+                    <div style="background:#13131c; border-radius:16px; padding:16px 20px; border:1px solid #222233; flex:1;">
+                        <div style="color:#8585a0; font-size:12px;">Статус</div>
+                        <div style="font-weight:600; font-size:18px; display:flex; align-items:center; gap:8px; color:#4ade80;">
+                            <span style="display:inline-block; width:10px; height:10px; background:#4ade80; border-radius:50%; box-shadow:0 0 16px #4ade8088;"></span> Активирован
+                        </div>
+                    </div>
+                    <div style="background:#13131c; border-radius:16px; padding:16px 20px; border:1px solid #222233; flex:1;">
+                        <div style="color:#8585a0; font-size:12px;">Выбрано модов</div>
+                        <div style="font-weight:700; font-size:20px; color:#fb923c;" id="modCount">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== СЕРВЕРА ===== -->
+            <div id="tab-servers" class="tab-content">
+                <h1 class="tab-title">🌐 Сервера</h1>
+                <p class="tab-desc">Управляй своими серверами. Добавляй, удаляй, подключайся.</p>
+                
+                <div class="panel">
+                    <div class="panel-title">➕ Добавить сервер</div>
+                    <div class="row">
+                        <input type="text" id="serverNameInput" placeholder="Название сервера" style="flex:1;">
+                        <input type="text" id="serverIpInput" placeholder="IP: порт (например 127.0.0.1:25565)" style="flex:1.5;">
+                        <button class="btn btn-success" onclick="addServer()">➕ Добавить</button>
+                    </div>
+                </div>
+
+                <div class="panel" style="flex:1; overflow-y:auto;">
+                    <div class="panel-title">📋 Список серверов</div>
+                    <div id="serversList"><div class="empty-msg">Нет добавленных серверов</div></div>
+                </div>
+            </div>
+
+            <!-- ===== МОДЫ ===== -->
+            <div id="tab-mods" class="tab-content">
+                <h1 class="tab-title">📦 Моды</h1>
+                <p class="tab-desc">Папка <b>mods</b> в папке с лаунчером. Можно открыть, удалить моды.</p>
+                
+                <div class="panel" style="flex:1; overflow-y:auto;">
+                    <div class="panel-title">📂 Папка mods</div>
+                    <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                        <button class="btn btn-blue" onclick="openModsFolder()">📂 Открыть папку</button>
+                        <button class="btn btn-danger" onclick="deleteAllMods()">🗑️ Удалить все моды</button>
+                        <span style="color:#8585a0; font-size:13px; align-self:center;" id="modsFolderPath">Путь: не определён</span>
+                    </div>
+                    <div id="modsList" class="mod-list"><div class="empty-msg">Нет модов. Положите .jar файлы в папку mods</div></div>
+                </div>
+            </div>
+
+            <!-- ===== НАСТРОЙКИ ===== -->
+            <div id="tab-settings" class="tab-content">
+                <h1 class="tab-title">⚙️ Настройки</h1>
+                <p class="tab-desc">Выбор версии, ОЗУ и другие параметры.</p>
+                
+                <div class="panel">
+                    <div class="panel-title">🎮 Версия Minecraft</div>
+                    <div class="row">
+                        <select id="versionSelect">
+                            <option value="1.8.9">1.8.9</option>
+                            <option value="1.12.2">1.12.2</option>
+                            <option value="1.16.5">1.16.5</option>
+                            <option value="1.19.2">1.19.2</option>
+                            <option value="1.20.1">1.20.1</option>
+                            <option value="latest">Последняя</option>
+                        </select>
+                        <span style="color:#8585a0; font-size:13px;">Выбранная версия будет использоваться при запуске</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">💾 Выделение ОЗУ</div>
+                    <div class="row">
+                        <input type="range" min="1" max="16" value="4" id="ramSlider" oninput="updateRam(this.value)" style="flex:1;">
+                        <span style="color:#fb923c; font-weight:700;"><span id="ramValue">4</span> GB</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">🔧 Дополнительно</div>
+                    <div class="row" style="gap:15px;">
+                        <label><input type="checkbox" id="fullscreenCheck" checked> Полный экран</label>
+                        <label><input type="checkbox" id="serverAutoConnect"> Автоподключение к выбранному серверу</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== НИЖНЯЯ ПАНЕЛЬ ===== -->
+            <div class="launch-panel">
+                <div class="nick-box">
+                    <input type="text" id="nickname" value="" placeholder="Ваш никнейм">
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <button class="btn btn-sm" onclick="openMinecraftFolder()">📁 .minecraft</button>
+                    <button class="btn-play" id="playBtn" onclick="launchGame()" disabled>▶ ИГРАТЬ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ====== ГИТХАБ НАСТРОЙКИ ======
+    const GITHUB_TOKEN = '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';
+    const REPO_OWNER = 'mahmudgeriel-design';
+    const REPO_NAME = 'frost-keys';
+    const FILE_PATH = 'keys.json';
+    const KEYS_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+
+    let keysData = null;
+    let isActivated = false;
+    let keysLoaded = false;
+    let currentKey = null;
+    let expiryInterval = null;
+
+    // ====== HWID ======
+    function getHWID() {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fb923c';
+            ctx.fillRect(0, 0, 128, 64);
+            ctx.font = '24px Arial';
+            ctx.fillStyle = '#fff';
+            ctx.fillText('FV', 10, 40);
+            const fingerprint = canvas.toDataURL();
+            let hash = 0;
+            for (let i = 0; i < fingerprint.length; i++) {
+                hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
+                hash |= 0;
+            }
+            return 'HWID-' + Math.abs(hash).toString(16).toUpperCase().slice(0, 8);
+        } catch (e) {
+            return 'HWID-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        }
+    }
+
+    // ====== ЗАГРУЗКА КЛЮЧЕЙ ======
+    async function loadKeys() {
+        const status = document.getElementById('lockStatus');
+        const sub = document.getElementById('statusSub');
+        status.className = 'status-msg loading';
+        status.textContent = '⏳ Загрузка ключей...';
+        sub.textContent = '⏳ Загрузка ключей...';
+        try {
+            const response = await fetch(KEYS_URL, {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            const content = atob(data.content);
+            keysData = JSON.parse(content);
+            keysLoaded = true;
+            status.className = 'status-msg';
+            status.textContent = '✅ Ключи загружены. Введите ключ.';
+            sub.textContent = 'Введите ключ для доступа к лаунчеру';
+            return true;
+        } catch (error) {
+            status.className = 'status-msg error';
+            status.textContent = '❌ Ошибка загрузки. Проверьте интернет.';
+            return false;
+        }
+    }
+
+    // ====== СОХРАНЕНИЕ КЛЮЧЕЙ ======
+    async function saveKeys() {
+        try {
+            const response = await fetch(KEYS_URL, {
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            const data = await response.json();
+            const sha = data.sha;
+            const content = btoa(JSON.stringify(keysData, null, 2));
+            const updateResponse = await fetch(KEYS_URL, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: 'Обновление статуса ключа',
+                    content: content,
+                    sha: sha
+                })
+            });
+            if (!updateResponse.ok) throw new Error('Ошибка сохранения');
+            return true;
+        } catch (error) {
+            console.error('❌ Ошибка сохранения:', error);
+            return false;
+        }
+    }
+
+    // ====== ТАЙМЕР ======
+    function startExpiryTimer(expiryDate) {
+        const timerDisplay = document.getElementById('timerDisplay');
+        const expiryDisplay = document.getElementById('expiryDateDisplay');
+        timerDisplay.style.display = 'block';
+        expiryDisplay.style.display = 'block';
+        const date = new Date(expiryDate);
+        expiryDisplay.textContent = `📅 Истекает: ${date.toLocaleString('ru-RU', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        })}`;
+        if (expiryInterval) clearInterval(expiryInterval);
+        expiryInterval = setInterval(() => {
+            const diff = new Date(expiryDate) - new Date();
+            if (diff <= 0) {
+                clearInterval(expiryInterval);
+                timerDisplay.className = 'timer expired';
+                timerDisplay.textContent = '⏰ ВРЕМЯ ИСТЕКЛО!';
+                document.getElementById('lockOverlay').classList.remove('hidden');
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('playBtn').disabled = true;
+                isActivated = false;
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            timerDisplay.className = 'timer';
+            timerDisplay.style.color = '#fb923c';
+            timerDisplay.textContent = days > 0 ? `⏱️ ${days}д ${hours}ч ${minutes}м ${seconds}с` : `⏱️ ${hours}ч ${minutes}м ${seconds}с`;
+        }, 1000);
+    }
+
+    // ====== АКТИВАЦИЯ ======
+    async function activateFromLock() {
+        const input = document.getElementById('lockKeyInput');
+        const status = document.getElementById('lockStatus');
+        const btn = document.getElementById('lockActivateBtn');
+        const key = input.value.trim().toUpperCase();
+
+        if (!key) {
+            status.className = 'status-msg error';
+            status.textContent = '❌ Введите ключ';
+            return;
+        }
+        if (!keysLoaded) {
+            const loaded = await loadKeys();
+            if (!loaded) return;
+        }
+        btn.disabled = true;
+        status.className = 'status-msg loading';
+        status.textContent = '⏳ Проверка...';
+
+        try {
+            const hwid = getHWID();
+            const nickname = document.getElementById('nickname').value.trim() || 'Unknown';
+            console.log('🔑 Ищем ключ:', key);
+            if (!keysData[key]) {
+                status.className = 'status-msg error';
+                status.textContent = '❌ Ключ не найден';
+                btn.disabled = false;
+                return;
+            }
+            const keyInfo = keysData[key];
+            const expiryDate = new Date(keyInfo.expires);
+            if (expiryDate < new Date()) {
+                status.className = 'status-msg error';
+                status.textContent = '❌ Срок истёк';
+                btn.disabled = false;
+                return;
+            }
+            if (keyInfo.isPublic) {
+                status.className = 'status-msg success';
+                status.textContent = '✅ Публичный ключ активирован!';
+                isActivated = true;
+                currentKey = key;
+                localStorage.setItem('frost_key', key);
+                localStorage.setItem('frost_nickname', nickname);
+                startExpiryTimer(expiryDate);
+                unlockLauncher();
+                return;
+            }
+            if (keyInfo.used) {
+                if (keyInfo.hwid !== hwid) {
+                    status.className = 'status-msg error';
+                    status.textContent = '❌ Ключ уже используется на другом устройстве';
+                    btn.disabled = false;
+                    return;
+                }
+                status.className = 'status-msg success';
+                status.textContent = '✅ Ключ активирован!';
+                isActivated = true;
+                currentKey = key;
+                localStorage.setItem('frost_key', key);
+                localStorage.setItem('frost_nickname', nickname);
+                startExpiryTimer(expiryDate);
+                unlockLauncher();
+                return;
+            }
+            status.textContent = '⏳ Сохранение статуса...';
+            keysData[key].used = true;
+            keysData[key].hwid = hwid;
+            keysData[key].usedBy = nickname;
+            keysData[key].firstUsedAt = new Date().toISOString();
+            const saved = await saveKeys();
+            if (saved) {
+                status.className = 'status-msg success';
+                status.textContent = '✅ Ключ активирован и сохранён!';
+                isActivated = true;
+                currentKey = key;
+                localStorage.setItem('frost_key', key);
+                localStorage.setItem('frost_nickname', nickname);
+                startExpiryTimer(expiryDate);
+                unlockLauncher();
+            } else {
+                status.className = 'status-msg error';
+                status.textContent = '❌ Ошибка сохранения на GitHub';
+                keysData[key].used = false;
+                keysData[key].hwid = null;
+                keysData[key].usedBy = null;
+                keysData[key].firstUsedAt = null;
+                btn.disabled = false;
+            }
+        } catch (error) {
+            status.className = 'status-msg error';
+            status.textContent = '❌ Ошибка: ' + error.message;
+            btn.disabled = false;
+        }
+    }
+
+    function unlockLauncher() {
+        setTimeout(() => {
+            document.getElementById('lockOverlay').classList.add('hidden');
+            document.getElementById('mainContent').style.display = 'flex';
+            document.getElementById('playBtn').disabled = false;
+            loadServers();
+            loadMods();
+        }, 300);
+    }
+
+    // ====== СЕРВЕРА ======
+    let servers = [];
+
+    function loadServers() {
+        try {
+            const saved = localStorage.getItem('frost_servers');
+            servers = saved ? JSON.parse(saved) : [];
+        } catch { servers = []; }
+        renderServers();
+    }
+
+    function saveServers() {
+        localStorage.setItem('frost_servers', JSON.stringify(servers));
+    }
+
+    function renderServers() {
+        const container = document.getElementById('serversList');
+        if (servers.length === 0) {
+            container.innerHTML = '<div class="empty-msg">Нет добавленных серверов</div>';
+            return;
+        }
+        container.innerHTML = servers.map((s, i) => `
+            <div class="list-item">
+                <div>
+                    <div class="name">${s.name}</div>
+                    <div class="ip">${s.ip} <span class="server-status online">● онлайн</span></div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-success btn-sm" onclick="connectToServer(${i})">▶ Подключиться</button>
+                    <button class="btn btn-danger btn-sm" onclick="removeServer(${i})">✕</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function addServer() {
+        const name = document.getElementById('serverNameInput').value.trim();
+        const ip = document.getElementById('serverIpInput').value.trim();
+        if (!name || !ip) { alert('Введите название и IP сервера'); return; }
+        servers.push({ name, ip });
+        saveServers();
+        renderServers();
+        document.getElementById('serverNameInput').value = '';
+        document.getElementById('serverIpInput').value = '';
+    }
+
+    function removeServer(index) {
+        if (!confirm(`Удалить сервер "${servers[index].name}"?`)) return;
+        servers.splice(index, 1);
+        saveServers();
+        renderServers();
+    }
+
+    function connectToServer(index) {
+        const server = servers[index];
+        if (!isActivated) { alert('❌ Сначала активируйте ключ!'); return; }
+        localStorage.setItem('frost_auto_connect', server.ip);
+        alert(`✅ Автоподключение к ${server.name} (${server.ip}) установлено! При запуске игры вы попадёте на этот сервер.`);
+    }
+
+    // ====== МОДЫ (работает только в Electron или локально) ======
+    function loadMods() {
+        const container = document.getElementById('modsList');
+        // В браузере показываем заглушку
+        if (typeof window.require === 'undefined') {
+            container.innerHTML = `
+                <div class="empty-msg" style="grid-column:span 2;">
+                    📁 Папка mods доступна только в .exe версии лаунчера.<br>
+                    Положите моды в папку: <br>
+                    <b style="color:#fb923c;">C:\\Users\\Ваш_пользователь\\AppData\\Roaming\\.minecraft\\mods</b>
+                </div>
+            `;
+            document.getElementById('modsFolderPath').textContent = 'Путь: .minecraft/mods (стандартный)';
+            document.getElementById('modCount').textContent = '?';
+            return;
+        }
+        // Electron — читаем папку
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            const modsPath = path.join(os.homedir(), 'AppData', 'Roaming', '.minecraft', 'mods');
+            document.getElementById('modsFolderPath').textContent = `Путь: ${modsPath}`;
+            
+            if (!fs.existsSync(modsPath)) {
+                container.innerHTML = `<div class="empty-msg" style="grid-column:span 2;">📁 Папка mods не найдена. Создайте её вручную.</div>`;
+                document.getElementById('modCount').textContent = '0';
+                return;
+            }
+            const files = fs.readdirSync(modsPath).filter(f => f.endsWith('.jar'));
+            document.getElementById('modCount').textContent = files.length;
+            if (files.length === 0) {
+                container.innerHTML = `<div class="empty-msg" style="grid-column:span 2;">📭 Нет модов (.jar)</div>`;
+                return;
+            }
+            container.innerHTML = files.map(f => {
+                const stats = fs.statSync(path.join(modsPath, f));
+                const size = (stats.size / 1024 / 1024).toFixed(1);
+                return `
+                    <div class="mod-item">
+                        <span class="mod-name">${f}</span>
+                        <span style="display:flex; gap:6px; align-items:center;">
+                            <span class="mod-size">${size} MB</span>
+                            <button class="btn btn-danger btn-sm" onclick="deleteMod('${f}')">✕</button>
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            container.innerHTML = `<div class="empty-msg" style="grid-column:span 2;">❌ Ошибка чтения папки mods: ${e.message}</div>`;
+        }
+    }
+
+    function openModsFolder() {
+        if (typeof window.require !== 'undefined') {
+            try {
+                const { exec } = require('child_process');
+                const path = require('path');
+                const os = require('os');
+                const modsPath = path.join(os.homedir(), 'AppData', 'Roaming', '.minecraft', 'mods');
+                exec(`explorer "${modsPath}"`);
+            } catch (e) { alert('❌ Не удалось открыть папку'); }
+        } else {
+            alert('📁 Откройте папку вручную: %APPDATA%\\.minecraft\\mods');
+        }
+    }
+
+    function deleteMod(modName) {
+        if (!confirm(`Удалить мод "${modName}"?`)) return;
+        if (typeof window.require === 'undefined') { alert('❌ Доступно только в .exe версии'); return; }
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            const modsPath = path.join(os.homedir(), 'AppData', 'Roaming', '.minecraft', 'mods');
+            fs.unlinkSync(path.join(modsPath, modName));
+            loadMods();
+        } catch (e) { alert('❌ Ошибка удаления: ' + e.message); }
+    }
+
+    function deleteAllMods() {
+        if (!confirm('🗑️ Удалить ВСЕ моды?')) return;
+        if (typeof window.require === 'undefined') { alert('❌ Доступно только в .exe версии'); return; }
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            const modsPath = path.join(os.homedir(), 'AppData', 'Roaming', '.minecraft', 'mods');
+            const files = fs.readdirSync(modsPath).filter(f => f.endsWith('.jar'));
+            for (const f of files) {
+                fs.unlinkSync(path.join(modsPath, f));
+            }
+            loadMods();
+        } catch (e) { alert('❌ Ошибка: ' + e.message); }
+    }
+
+    function openMinecraftFolder() {
+        if (typeof window.require !== 'undefined') {
+            try {
+                const { exec } = require('child_process');
+                const path = require('path');
+                const os = require('os');
+                const mcPath = path.join(os.homedir(), 'AppData', 'Roaming', '.minecraft');
+                exec(`explorer "${mcPath}"`);
+            } catch (e) { alert('❌ Не удалось открыть папку'); }
+        } else {
+            alert('📁 Откройте папку вручную: %APPDATA%\\.minecraft');
+        }
+    }
+
+    // ====== ЗАПУСК ИГРЫ ======
+    function launchGame() {
+        if (!isActivated) {
+            alert('❌ Сначала активируйте ключ!');
+            return;
+        }
+        const nickname = document.getElementById('nickname').value.trim() || 'Player';
+        const version = document.getElementById('versionSelect').value;
+        const ram = parseInt(document.getElementById('ramSlider').value);
+        const fullscreen = document.getElementById('fullscreenCheck').checked;
+        const autoConnect = document.getElementById('serverAutoConnect').checked;
+        const serverIp = localStorage.getItem('frost_auto_connect') || '';
+
+        localStorage.setItem('frost_nickname', nickname);
+        localStorage.setItem('frost_version', version);
+        localStorage.setItem('frost_ram', ram);
+
+        // Формируем команду для запуска
+        let javaArgs = `-Xmx${ram}G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:MaxGCPauseMillis=50`;
+        if (fullscreen) javaArgs += ' -Dorg.lwjgl.opengl.Window.fullscreen=true';
+        if (serverIp && autoConnect) {
+            javaArgs += ` --server ${serverIp}`;
+        }
+
+        const command = `javaw.exe ${javaArgs} -jar "C:\\Program Files\\Java\\jre1.8.0_291\\bin\\javaw.exe" --username "${nickname}" --version "${version}"`;
+
+        if (typeof window.require !== 'undefined') {
+            // Electron: запускаем через child_process
+            try {
+                const { exec } = require('child_process');
+                const os = require('os');
+                const username = os.userInfo().username;
+                const mcPath = `C:\\Users\\${username}\\AppData\\Roaming\\.minecraft`;
+                const versionPath = `${mcPath}\\versions\\${version}\\${version}.jar`;
+                
+                const cmd = `javaw.exe -Xmx${ram}G -jar "${versionPath}" --username "${nickname}"`;
+                exec(cmd, (error) => {
+                    if (error) {
+                        alert('❌ Ошибка запуска Minecraft. Убедитесь, что выбранная версия установлена.');
+                        console.error(error);
+                    }
+                });
+            } catch (e) {
+                alert('❌ Ошибка запуска: ' + e.message);
+            }
+        } else {
+            // Браузер: через minecraft://
+            try {
+                window.location.href = `minecraft://launch?username=${encodeURIComponent(nickname)}`;
+                setTimeout(() => {
+                    alert(`
+                        🚀 Если Minecraft не запустился:
+                        1. Откройте официальный лаунчер
+                        2. Войдите в аккаунт
+                        3. Нажмите "Играть"
+
+                        Ваш ник: ${nickname}
+                        Версия: ${version}
+                        ${serverIp && autoConnect ? `Сервер: ${serverIp}` : ''}
+                    `);
+                }, 2000);
+            } catch (e) {
+                alert('❌ Не удалось запустить Minecraft.\nУбедитесь, что у вас установлен официальный лаунчер.');
+            }
+        }
+    }
+
+    // ====== ОБНОВЛЕНИЕ ОЗУ ======
+    function updateRam(val) {
+        document.getElementById('ramValue').textContent = val;
+    }
+
+    // ====== ВКЛАДКИ ======
+    function switchTab(tabName) {
+        if (!isActivated) return;
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const t = btn.textContent.toLowerCase();
+            if (t.includes('главная') && tabName === 'main') btn.classList.add('active');
+            if (t.includes('сервера') && tabName === 'servers') btn.classList.add('active');
+            if (t.includes('моды') && tabName === 'mods') btn.classList.add('active');
+            if (t.includes('настройки') && tabName === 'settings') btn.classList.add('active');
+        });
+        if (tabName === 'servers') loadServers();
+        if (tabName === 'mods') loadMods();
+    }
+
+    // ====== ЗАПУСК ======
+    window.onload = async function() {
+        const savedNick = localStorage.getItem('frost_nickname');
+        if (savedNick) document.getElementById('nickname').value = savedNick;
+        const savedVersion = localStorage.getItem('frost_version');
+        if (savedVersion) document.getElementById('versionSelect').value = savedVersion;
+        const savedRam = localStorage.getItem('frost_ram');
+        if (savedRam) {
+            document.getElementById('ramSlider').value = savedRam;
+            document.getElementById('ramValue').textContent = savedRam;
+        }
+        await loadKeys();
+        const savedKey = localStorage.getItem('frost_key');
+        if (savedKey) {
+            document.getElementById('lockKeyInput').value = savedKey;
+            setTimeout(activateFromLock, 300);
+        }
+    };
+
+    document.getElementById('lockKeyInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') activateFromLock();
+    });
+    </script>
+</body>
+</html>
